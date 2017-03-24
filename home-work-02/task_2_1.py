@@ -2,6 +2,9 @@ import os
 
 
 class AOpen:
+    END_OF_FILE = bytes('', encoding='utf8')
+    NEW_LINE = bytes('\n', encoding='utf8')
+
     def __init__(self, file_name, flags, encoding='utf8'):
         self.description = os.open(file_name, self.pars_flags(flags))
         self.encoding = encoding
@@ -31,17 +34,17 @@ class AOpen:
 
     def readLine(self):
         data = ''
-        while os.pread(self.description, 1, self.offset) != bytes('\r', encoding='utf8'):
+        while os.pread(self.description, 1, self.offset) not in [self.NEW_LINE, self.END_OF_FILE]:
             data += str(os.pread(self.description, 1, self.offset), self.encoding)
             self.offset += 1
-
+        self.offset += 1
         return data
 
     def write(self, data):
         os.write(self.description, bytes(data, self.encoding))
 
     def writeLine(self, data):
-        os.write(self.description, bytes('\r\n' + data, self.encoding))
+        os.write(self.description, bytes('\n' + data, self.encoding))
 
     def close(self):
         os.close(self.description)
