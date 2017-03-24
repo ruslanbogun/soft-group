@@ -4,19 +4,15 @@ import os
 class AOpen:
     END_OF_FILE = bytes('', encoding='utf8')
     NEW_LINE = bytes('\n', encoding='utf8')
+    FLAGS = {'r': os.O_RDONLY,
+             'w': os.O_WRONLY,
+             'rw': os.O_RDWR,
+             'a': os.O_APPEND}
 
     def __init__(self, file_name, flags, encoding='utf8'):
-        self.description = os.open(file_name, self.pars_flags(flags))
+        self.description = os.open(file_name, self.FLAGS.get(flags))
         self.encoding = encoding
         self.offset = 0
-
-    def pars_flags(self, op):
-        flags = {'r': os.O_RDONLY,
-                 'w': os.O_WRONLY,
-                 'rw': os.O_RDWR,
-                 'a': os.O_APPEND
-                 }
-        return flags.get(op)
 
     def read(self, n=-1):
         data = ''
