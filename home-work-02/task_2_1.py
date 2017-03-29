@@ -14,6 +14,12 @@ class AOpen:
         self.encoding = encoding
         self.offset = 0
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self):
+        return self.close()
+
     def read(self, n=-1):
         data = ''
         offset = 0

@@ -1,15 +1,18 @@
 class PublicMeta(type):
     def __new__(mcs, name, bases, attrs):
+
+        pattern = "_" + name + "__"
+
         def pretty_func():
             print('Some useful message')
 
         def do_things(self):
             print(self.var)
 
-        def rename_attributes(key, class_name):
-            return key.replace("_" + class_name + "__", "") if not key.startswith('__') else key
+        def rename_attributes(key, value):
+            return key.replace(pattern, "") if not callable(value) else key
 
-        new_dct = {rename_attributes(key, name): value for key, value in attrs.items()}
+        new_dct = {rename_attributes(key, value): value for key, value in attrs.items()}
 
         new_dct.update({'pretty_func': staticmethod(pretty_func)})
         new_dct.update({'do_things': do_things})
