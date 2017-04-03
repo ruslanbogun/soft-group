@@ -3,6 +3,8 @@ from lxml import html
 import logging
 import threading
 
+logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s', )
+
 
 class Scraper:
     def __init__(self, query, page_from, page_to, limit=2):
@@ -31,11 +33,6 @@ class Scraper:
     def start(self):
         self.__prepare()
 
-        logger = logging.getLogger('scrapper_application')
-        logger.setLevel(logging.INFO)
-        console = logging.StreamHandler()
-        logger.addHandler(console)
-
         semaphore = threading.Semaphore(self.limit)
 
         items_list = []
@@ -43,7 +40,7 @@ class Scraper:
 
         for t in range(self.page_from, self.page_to):
             cur_linc = self.get_link(t)
-            scraper_thread = threading.Thread(target=self.start_crawl, args=(cur_linc, semaphore, items_list, logger,))
+            scraper_thread = threading.Thread(target=self.start_crawl, args=(cur_linc, semaphore, items_list,))
             threads.append(scraper_thread)
             scraper_thread.start()
 
@@ -74,14 +71,14 @@ class Scraper:
                     pass
             return items
 
-    def notify(self, page_url, log):
-        log.info("Task done: %s", page_url)
+    def notify(self, page_url):
+        logging.info("Task done: " + page_url)
 
-    def start_crawl(self, url, sem, items_list, log):
+    def start_crawl(self, url, sem, items_list):
         sem.acquire()
         for item in self.crawl(url):
             items_list.append(item)
-        self.notify(url, log)
+        self.notify(url)
         sem.release()
 
 
