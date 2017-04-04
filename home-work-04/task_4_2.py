@@ -40,6 +40,7 @@ class Scraper:
 
         for t in range(self.page_from, self.page_to):
             cur_linc = self.get_link(t)
+            semaphore.acquire()
             scraper_thread = threading.Thread(target=self.start_crawl, args=(cur_linc, semaphore, items_list,))
             threads.append(scraper_thread)
             scraper_thread.start()
@@ -75,7 +76,6 @@ class Scraper:
         logging.info("Task done: " + page_url)
 
     def start_crawl(self, url, sem, items_list):
-        sem.acquire()
         for item in self.crawl(url):
             items_list.append(item)
         self.notify(url)
