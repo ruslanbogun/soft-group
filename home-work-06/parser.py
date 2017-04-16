@@ -2,12 +2,13 @@ import asyncio
 import aiohttp
 from lxml import html, etree
 import re
+import json
 
 START_HTTP = "http://forum.overclockers.ua/viewforum.php?f=26"
 SUBJECT = []
 AMOUNT_PAGES = 2
 
-PRICE_TEMPLATE = "([a-zA-Z0-9\.\s\(\)\-]{1,}[\s]{0,}[[Ц|ц][е|і]на]{0,}[\s]{0,}[0-9]{1,}[\s]{0,1}(грн|\$))"
+PRICE_TEMPLATE = "([0-9]{0,}[.,]{0,1}[0-9]{1,})[\s]{0,1}([Г|г]рн|\$)"
 
 
 def pars_topics(body):
@@ -17,8 +18,7 @@ def pars_topics(body):
 
 
 def find_price(content):
-    raw_content = etree.tostring(content, method="text", encoding='unicode')
-    prices = re.findall(PRICE_TEMPLATE, raw_content)
+    prices = max(re.findall(PRICE_TEMPLATE, content)) if re.findall(PRICE_TEMPLATE, content) else [[], []]
     return prices
 
 
@@ -31,8 +31,9 @@ async def get_content(loop, topic):
         body = await result.text()
         root = html.fromstring(body)
         content = root.xpath("//div[@class='content']")
-        price = find_price(content[0])
-        return [url, author, topictitles, price]
+        clear_content = etree.tostring(content[0], method="text", encoding='unicode')
+        price = find_price(clear_content)
+        return [url, author, topictitles, price, clear_content]
 
 
 async def get_subjects(loop, page):
@@ -47,9 +48,14 @@ async def main(loop, amount_pages):
     tasks = [loop.create_task(get_subjects(loop, page)) for page in range(0, amount_pages * 40, 40)]
     subjects = await asyncio.gather(*tasks, return_exceptions=True)
 
-    for page_results in subjects:
-        for page_result in page_results:
-            print(page_result)
+    with open("parser.log", mode="w") as file:
+        for page_results in subjects:
+            for page_result in page_results:
+                json.dump(
+                    {"title": page_result[2], "url": page_result[0], "author": page_result[1], "text": page_result[4],
+                     "price": page_result[3][0], "currency": page_result[3][1]}, file, ensure_ascii=False)
+                file.write("\r\n")
+                print(page_result)
 
 
 loop = asyncio.get_event_loop()
