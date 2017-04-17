@@ -8,18 +8,18 @@ START_HTTP = "http://forum.overclockers.ua/viewforum.php?f=26"
 SUBJECT = []
 AMOUNT_PAGES = 2
 
-PRICE_TEMPLATE = "([0-9]{0,}[.,]{0,1}[0-9]{1,})[\s]{0,1}([Г|г]рн|\$)"
+PRICE_TEMPLATE = "([0-9]{0,}[.,]{0,1}[0-9]{1,})[\s]{0,1}([Г|г]рн|\$)" \
+                 "|[Ц|ц][е|і]на{0,1}([\s]{0,}[0-9]{0,}[.,]{0,1}[0-9]{1,})[\s]{0,1}([Г|г]рн|\$)"
 
 
 def pars_topics(body):
     root = html.fromstring(body)
-    topics = root.xpath('//li[contains(@class, "row bg")]')
-    return topics
+    return root.xpath('//li[contains(@class, "row bg")]')
 
 
 def find_price(content):
-    prices = max(re.findall(PRICE_TEMPLATE, content)) if re.findall(PRICE_TEMPLATE, content) else [[], []]
-    return prices
+    price = max(re.findall(PRICE_TEMPLATE, content)) if re.findall(PRICE_TEMPLATE, content) else [[], []]
+    return [price[0] if price[0] is not "" else price[2], price[1] if price[1] is not "" else price[3]]
 
 
 async def get_content(loop, topic):
@@ -40,8 +40,7 @@ async def get_subjects(loop, page):
     async with aiohttp.request('get', START_HTTP, params="start=" + str(page), loop=loop) as result:
         body = await result.text()
         tasks = [loop.create_task(get_content(loop, topic)) for topic in pars_topics(body)]
-        price = await asyncio.gather(*tasks, return_exceptions=True)
-        return price
+        return await asyncio.gather(*tasks, return_exceptions=True)
 
 
 async def main(loop, amount_pages):
@@ -58,5 +57,5 @@ async def main(loop, amount_pages):
                 print(page_result)
 
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main(loop, AMOUNT_PAGES))
+main_loop = asyncio.get_event_loop()
+main_loop.run_until_complete(main(main_loop, AMOUNT_PAGES))
