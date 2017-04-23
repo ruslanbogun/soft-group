@@ -57,7 +57,7 @@ async def get_content(loop, topic):
     author = topic.xpath("./dl/dd[@class='author']/a/text()")[0]
     topictitles = topic.xpath("./dl/dt/div/a[@class='topictitle']/text()")[0]
 
-    async with aiohttp.request('get', url, loop=loop) as result:
+    async with http_session.request('get', url) as result:
         body = await result.text()
         root = html.fromstring(body)
         content = root.xpath("//div[@class='content']")
@@ -67,13 +67,16 @@ async def get_content(loop, topic):
 
 
 async def get_subjects(loop, page):
-    async with aiohttp.request('get', START_HTTP, params="start=" + str(page), loop=loop) as result:
+    async with http_session.request('get', START_HTTP, params="start=" + str(page)) as result:
         body = await result.text()
         tasks = [loop.create_task(get_content(loop, topic)) for topic in pars_topics(body)]
         return await asyncio.gather(*tasks, return_exceptions=True)
 
 
 async def main(loop, amount_pages):
+    global http_session
+    http_session = aiohttp.ClientSession()
+
     tasks = [loop.create_task(get_subjects(loop, page)) for page in range(0, amount_pages * 40, 40)]
     subjects = await asyncio.gather(*tasks, return_exceptions=True)
     for page_results in subjects:
@@ -99,5 +102,6 @@ async def main(loop, amount_pages):
             print(page_result)
 
 
-main_loop = asyncio.get_event_loop()
-main_loop.run_until_complete(main(main_loop, AMOUNT_PAGES))
+if __name__ == '__main__':
+    main_loop = asyncio.get_event_loop()
+    main_loop.run_until_complete(main(main_loop, AMOUNT_PAGES))
